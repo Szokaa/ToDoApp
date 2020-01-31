@@ -1,0 +1,190 @@
+import React from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  TouchableHighlight
+} from 'react-native';
+
+import { Parse } from "parse/react-native";
+
+export default class LogInScreen extends React.Component{
+  static navigationOptions = {
+    header: null,
+  };
+
+  constructor(props){
+    super(props);
+    this.state = {
+      username: '',
+      password: '',
+      nameError: null
+    }
+  }
+
+  navigateToPage = (page) => {
+    this.props.navigation.navigate(page);
+  }
+
+  alertAnError = (title,message) => {
+    Alert.alert(
+      title,
+      message,
+      [
+        {text: 'OK', onPress: () => {this.navigateToPage('LogInStack')}},
+      ]
+    )
+  }
+
+  componentWillMount(){
+    Parse.User.currentAsync().then(user => {
+      if (user !== undefined || user !== null) { 
+        this.navigateToPage('LogInStack'); 
+      } else {
+        let sessionToken = user.getSessionToken();
+        Parse.User.become(sessionToken).then(object => {
+          this.navigateToPage('HomeStack');
+        }).catch(error => {
+          this.navigateToPage('LogInStack');
+        });
+      }
+    })
+  }
+
+
+  onLogin = async() =>{
+    let    
+      username = (this.state.username).trim(),
+      password = (this.state.password).trim();
+
+    if (username === "" || password === "" ) {
+      this.setState(() => ({ nameError: `Uzupełnij pola.` }));
+    } else {
+      try {
+        await Parse.User.logIn(username.toString(), password.toString());
+        this.props.navigation.navigate('HomeStack');        
+      } catch (error) {                
+        this.setState(() => ({ nameError: `Niepoprawne dane` }));
+        return (error)
+      }
+    }
+  }
+
+  render() {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.titlePage}>Zaloguj</Text>
+        <View style={styles.inputContainer}>
+          <TextInput style={styles.inputs}
+            keyboardType="email-address"
+            placeholder="Nazwa"
+            value={this.state.username}
+            onChangeText={(username) => this.setState({username})}/>
+        </View>
+        <View style={styles.inputContainer}>
+          <TextInput style={styles.inputs}
+            placeholder="Hasło"
+            secureTextEntry={true}
+            underlineColorAndroid='transparent'
+            value={this.state.password}
+            onChangeText={(password) => this.setState({password})}/>
+        </View>
+        {!!this.state.nameError && (
+          <View styles={styles.divError}>
+              <Text style={styles.divErrorFont}>{this.state.nameError}</Text>
+          </View>
+        )}
+        <TouchableHighlight style={[styles.buttonContainer, styles.loginButton]} onPress={this.onLogin}>
+          <Text style={styles.loginText}>Zaloguj</Text>
+        </TouchableHighlight>
+        <View style={styles.containerLinksRow}>
+          <TouchableHighlight style={styles.txtLink} onPress={() => this.navigateToPage('RestorePasswordStack')}>
+            <Text style={{fontWeight:'bold'}}>Przypomnij hasło?</Text>
+          </TouchableHighlight>
+
+          <TouchableHighlight style={styles.txtLink} onPress={() => this.navigateToPage('SignUpStack')}>
+            <Text style={{fontWeight:'bold'}}>Zarejestruj</Text>
+          </TouchableHighlight>
+        </View>            
+      </View>
+    );
+  }
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: "#d11742",
+    padding: 30
+  },
+  row: {
+    flexDirection: "row"
+  },
+  titlePage:{
+    marginBottom: 30,
+    fontSize: 25,
+    fontWeight: 'bold'
+  },
+  inputContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 5,
+    height: 50,
+    marginBottom: 15,
+    flexDirection: 'row'
+  },
+  divErrorFont:{
+    textAlign: 'center',
+    color: '#721c24',
+    backgroundColor: '#f8d7da',
+    borderColor: '#f5c6cb',
+    padding: 20,
+    marginTop: 10,
+    marginBottom: 10,
+    borderWidth: 2,
+  },
+  inputs:{
+    height: 50,
+    marginLeft:16,
+    flex:1,
+  },
+  fontAwesomeIcon:{
+    width:30,
+    height:30,
+    marginLeft:15,
+    justifyContent: 'center'
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom:20,
+    width: 250,
+    borderRadius: 5,
+  },
+  loginButton: {
+    backgroundColor: 'transparent',
+    borderBottomColor: '#fff',
+    borderBottomWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  containerLinksRow:{
+    marginTop: 50,
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  txtLink:{
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+      padding: 15
+  },  
+  loginText: {
+    color: '#fff',
+  }
+});
